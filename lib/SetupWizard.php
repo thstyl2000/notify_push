@@ -91,6 +91,23 @@ class SetupWizard {
 		return $result === 0;
 	}
 
+	public function hasRcd(): bool {
+		$result = null;
+		$output = [];
+		// Check for /usr/local/etc/rc.d. Fallback to /etc/rc.d
+		exec('test -d /usr/local/etc/rc.d', $output, $result);
+		if ($result === 0) {
+			$output = '/usr/local/etc/rc.d';
+			return true;
+		} else {
+			exec('test -d /etc/rc.d', $output, $result);
+			if ($result === 0) {
+				$output = '/etc/rc.d';
+				return true;
+			}
+		}
+	}
+
 	public function hasSELinux(): bool {
 		$result = null;
 		$output = [];
