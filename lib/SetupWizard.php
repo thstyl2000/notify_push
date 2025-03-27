@@ -92,20 +92,23 @@ class SetupWizard {
 	}
 
 	public function hasRcd(): bool {
-		$result = null;
-		$output = [];
-		// Check for /usr/local/etc/rc.d. Fallback to /etc/rc.d
-		exec('test -d /usr/local/etc/rc.d', $output, $result);
-		if ($result === 0) {
-			$output = '/usr/local/etc/rc.d';
-			return true;
-		} else {
-			exec('test -d /etc/rc.d', $output, $result);
-			if ($result === 0) {
-				$output = '/etc/rc.d';
-				return true;
-			}
+		$result_bin = null;
+		$result_dir = null;
+		$output_bin = [];
+		$output_dir = [];
+		// Check if /usr/sbin/service is executable
+		exec('/bin/sh -c "test -x /usr/sbin/service"', $output_bin, $result_bin);
+		if ($result_bin !== 0) {
+			return false;
 		}
+		// Check for /usr/local/etc/rc.d
+		exec('test -d /usr/local/etc/rc.d', $output_dir, $result_dir);
+		if ($result_dir === 0) {
+			return true;
+		}
+		// Check for /etc/rc.d (always exists on FreeBSD)
+		exec('test -d /etc/rc.d', $output_dir, $result_dir);
+		return $result_dir === 0;
 	}
 
 	public function hasSELinux(): bool {
