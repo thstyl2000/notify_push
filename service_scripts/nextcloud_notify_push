@@ -1,36 +1,48 @@
-#! /bin/sh
+#!/bin/sh
 #
-# $FreeBSD$
-#
-
 # PROVIDE: nextcloud_notify_push
 # REQUIRE: NETWORKING DAEMON
 # KEYWORD: shutdown
 
 #
-# Add the following lines to /etc/rc.conf to enable nextcloud_notify_push:
-#
-#nextcloud_notify_push_enable="YES"
-#nextcloud_notify_push_droot="YOUR NEXTCLOUD DIRECTORY ROOT"
+# Add the following line to /etc/rc.conf to enable nextcloud_notify_push:
+# nextcloud_notify_push_enable="YES"
 
 . /etc/rc.subr
 
 name="nextcloud_notify_push"
-rcvar="nextcloud_notify_push_enable"
+rcvar="${name}_enable"
 
 load_rc_config $name
 
+: ${nextcloud_notify_push_enable:="NO"}
+: ${nextcloud_notify_push_user:="www"}
+: ${nextcloud_notify_push_group:="www"}
 : ${nextcloud_notify_push_enable:=NO}
-: ${nextcloud_notify_push_droot:=/usr/local/www/html}
+: ${nextcloud_notify_push_droot:=/usr/local/www/nextcloud}
 : ${nextcloud_notify_push_config:=${nextcloud_notify_push_droot}/config/config.php}
-: ${nextcloud_notify_push_flags:=-p 7867}
 
-my_flags=${nextcloud_notify_push_flags}
-nextcloud_notify_push_flags=
+pushserver_flags="-p 7867"
 
-pidfile=/var/run/nextcloud_notify_push.pid
+pidfile="/var/run/${name}.pid"
 binary="${nextcloud_notify_push_droot}/apps/notify_push/bin/fbsd_amd64/notify_push"
+
 command="/usr/sbin/daemon"
-command_args="-S -u www -P ${pidfile} -- ${binary} ${my_flags} ${nextcloud_notify_push_config}"
+command_args="-S -r -P ${pidfile} -- ${binary} ${pushserver_flags} ${nextcloud_notify_push_config}"
+
+start_precmd="${name}_precmd"
+stop_postcmd="${name}_postcmd"
+
+nextcloud_notify_push_precmd()
+{
+    # Create pidfile for user:group
+    install -o ${nextcloud_notify_push_user} -g ${nextcloud_notify_push_group} /dev/null ${pidfile}
+}
+
+nextcloud_notify_push_postcmd()
+{
+    # Clean up
+    rm -f ${pidfile}
+}
 
 run_rc_command "$1"
